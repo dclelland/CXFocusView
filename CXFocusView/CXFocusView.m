@@ -8,6 +8,7 @@
 
 #import <Masonry/Masonry.h>
 #import <ObjectiveSugar/ObjectiveSugar.h>
+#import <NSObject+KVOBlocks/NSObject+KVOBlocks.h>
 
 #import "CXFocusView.h"
 
@@ -15,9 +16,23 @@
 
 @property (nonatomic) BOOL waiting;
 
+- (void)viewsDidChangeFromViews:(NSArray *)fromViews toViews:(NSArray *)toViews;
+
 @end
 
 @implementation CXFocusView
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        __block CXFocusView *_self = self;
+        [self setObserverBlock:^(NSDictionary *change) {
+            [_self viewsDidChangeFromViews:change[NSKeyValueChangeOldKey] toViews:change[NSKeyValueChangeNewKey]];
+        } forKeyPath:NSStringFromSelector(@selector(views))];
+    }
+    return self;
+}
 
 - (instancetype)initWithView:(UIView *)view
 {
@@ -37,13 +52,33 @@
     return self;
 }
 
-#pragma mark - Setters
+#pragma mark - Lifecycle
 
-- (void)setViews:(NSArray *)views
+- (void)dealloc
+{
+    [self setViews:nil];
+}
+
+#pragma mark - Observation
+
+- (void)viewsDidChangeFromViews:(NSArray *)fromViews toViews:(NSArray *)toViews
 {
     self.waiting = NO;
-    if (_views == views) return;
-    _views = views;
+    
+    if (![fromViews isEqual:[NSNull null]]) {
+        [fromViews each:^(UIView *fromView) {
+            [fromView setObserverBlock:nil forKeyPath:NSStringFromSelector(@selector(center))];
+        }];
+    }
+    
+    if (![toViews isEqual:[NSNull null]]) {
+        [toViews each:^(UIView *toView) {
+            [toView setObserverBlock:^(NSDictionary *change) {
+                [self setNeedsDisplay];
+            } forKeyPath:NSStringFromSelector(@selector(center))];
+        }];
+    }
+    
     [self setNeedsDisplay];
 }
 
@@ -122,6 +157,12 @@
 }
 
 #pragma mark - Drawing
+
+- (void)setFrame:(CGRect)frame
+{
+    [super setFrame:frame];
+    [self setNeedsDisplay];
+}
 
 - (void)drawRect:(CGRect)rect
 {
