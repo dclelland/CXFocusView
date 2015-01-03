@@ -3,6 +3,8 @@ CXFocusView
 
 Basic UIView overlay (for tutorials etc.). Inserts itself under all other subviews and uses `drawRect:` to cover the canvas with a colour and then cut out collection of view frames using `drawRect:`. Based on [CXOverlay](https://github.com/dclelland/CXOverlay).
 
+Observes when subviews move by performing KVO on the `center` selector.
+
 ✓ UIView category convenience methods
 
     self.view.focusView = [[CXFocusView alloc] init];
