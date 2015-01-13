@@ -8,9 +8,21 @@
 
 #import <UIKit/UIKit.h>
 
+@class CXFocusView;
+
+@protocol CXFocusViewDelegate <NSObject>
+
+@optional
+- (void)focusView:(CXFocusView *)focusView willUpdateAnimated:(BOOL)animated;
+- (void)focusView:(CXFocusView *)focusView didUpdateAnimated:(BOOL)animated;
+
+@end
+
 @interface CXFocusView : UIView
 
 @property (nonatomic, strong) NSArray *views;
+
+@property (unsafe_unretained) id <CXFocusViewDelegate> delegate;
 
 - (instancetype)initWithView:(UIView *)view;
 - (instancetype)initWithViews:(NSArray *)views;

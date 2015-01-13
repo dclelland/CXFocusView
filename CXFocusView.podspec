@@ -6,12 +6,12 @@
 #
 Pod::Spec.new do |s|
   s.name                    = "CXFocusView"
-  s.version                 = "0.0.2"
+  s.version                 = "0.0.3"
   s.summary                 = "Basic UIView overlay (for tutorials etc.)"
   s.homepage                = "https://github.com/dclelland/CXFocusView"
   s.license                 = { :type => 'MIT' }
   s.author                  = { "Daniel Clelland" => "daniel.clelland@gmail.com" }
-  s.source                  = { :git => "https://github.com/dclelland/CXFocusView.git", :tag => "0.0.2" }
+  s.source                  = { :git => "https://github.com/dclelland/CXFocusView.git", :tag => "0.0.3" }
   s.platform                = :ios, '7.0'
   s.ios.deployment_target   = '7.0'
   s.ios.source_files        = 'CXFocusView/*.{h,m}'

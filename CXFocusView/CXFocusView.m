@@ -14,7 +14,10 @@
 
 @interface CXFocusView ()
 
-@property (nonatomic) BOOL waiting;
+@property (nonatomic, getter=isUpdating) BOOL updating;
+
+- (void)focusViewWillUpdateAnimated:(BOOL)animated;
+- (void)focusViewDidUpdateAnimated:(BOOL)animated;
 
 - (void)viewsDidChangeFromViews:(NSArray *)fromViews toViews:(NSArray *)toViews;
 
@@ -54,6 +57,17 @@
 
 #pragma mark - Lifecycle
 
+- (void)didMoveToSuperview
+{
+    [super didMoveToSuperview];
+    
+    if (self.superview) {
+        [self mas_updateConstraints:^(MASConstraintMaker *make) {
+            make.edges.equalTo(self.superview);
+        }];
+    }
+}
+
 - (void)dealloc
 {
     [self setViews:nil];
@@ -61,10 +75,26 @@
 
 #pragma mark - Observation
 
+- (void)focusViewWillUpdateAnimated:(BOOL)animated
+{
+    self.updating = YES;
+    
+    if (self.delegate && [self.delegate respondsToSelector:@selector(focusView:willUpdateAnimated:)]) {
+        [self.delegate focusView:self willUpdateAnimated:animated];
+    }
+}
+
+- (void)focusViewDidUpdateAnimated:(BOOL)animated
+{
+    self.updating = NO;
+    
+    if (self.delegate && [self.delegate respondsToSelector:@selector(focusView:didUpdateAnimated:)]) {
+        [self.delegate focusView:self didUpdateAnimated:animated];
+    }
+}
+
 - (void)viewsDidChangeFromViews:(NSArray *)fromViews toViews:(NSArray *)toViews
 {
-    self.waiting = NO;
-    
     if (![fromViews isEqual:[NSNull null]]) {
         [fromViews each:^(UIView *fromView) {
             [fromView setObserverBlock:nil forKeyPath:NSStringFromSelector(@selector(center))];
@@ -108,7 +138,9 @@
 
 - (void)focusOnViews:(NSArray *)views
 {
+    [self focusViewWillUpdateAnimated:NO];
     [self setViews:views];
+    [self focusViewDidUpdateAnimated:NO];
 }
 
 - (void)focusOnViews:(NSArray *)views withDuration:(NSTimeInterval)duration
@@ -123,13 +155,18 @@
 
 - (void)focusOnViews:(NSArray *)views withDuration:(NSTimeInterval)duration andDelay:(NSTimeInterval)delay andCompletion:(void (^)(BOOL finished))completion
 {
-    self.waiting = YES;
+    [self focusViewWillUpdateAnimated:YES];
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        if (self.waiting) {
+        if (self.isUpdating) {
             [self setViews:views];
             [UIView transitionWithView:self duration:duration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
                 [self.layer displayIfNeeded];
-            } completion:completion];
+            } completion:^(BOOL finished) {
+                [self focusViewDidUpdateAnimated:YES];
+                if (completion) {
+                    completion(finished);
+                }
+            }];
         }
     });
 }
@@ -195,10 +232,6 @@
     }];
     
     [self insertSubview:focusView atIndex:0];
-    
-    [focusView mas_updateConstraints:^(MASConstraintMaker *make) {
-        make.edges.equalTo(self);
-    }];
 }
 
 @end
